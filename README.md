@@ -1,9 +1,18 @@
+### Setup
+```
+psql -U postgres -c 'create database stevetest;'
+
+psql -U postgres --dbname khan-dev -c 'CREATE SCHEMA IF NOT EXISTS assignments;'
+
+# This will automatically migrate to the latest schema version
+go run server.go
+```
 
 
-### Create a Todo:
+#### Create a Todo:
 ```
 # I Specify that it's a mutation
-mutation {
+mutation AddTodo($text: String!) {
   # I invoke the createTodo mutation and pass it the input
   createTodo(input: {
     text: "This is a new todo"
@@ -16,10 +25,10 @@ mutation {
   }
 }
 ```
-### Update an existing Todo:
+#### Update an existing Todo:
 ```
 # I Specify that it's a mutation
-mutation {
+mutation UpdateTodo($id: ID!, $text: String!, $done: Boolean!) {
     # I invoke the updateTodo mutation and pass it the input
 updateTodo(input:{
   id:"43f2d64e-65f8-48f6-ac16-66c59cb68fa8",
@@ -34,10 +43,10 @@ updateTodo(input:{
   }  
 }
 ```
-### Query Single Todo
+#### Query Single Todo
 ```
 # I Specify that it's a query
-query {
+query GetTodo($id: ID!) {
     # I invoke the getTodo query and pass it the input
 getTodo(todoId:"43f2d64e-65f8-48f6-ac16-66c59cb68fa8")
 # Specify which properties I want from the return value
@@ -48,12 +57,12 @@ getTodo(todoId:"43f2d64e-65f8-48f6-ac16-66c59cb68fa8")
   }  
 }
 ```
-### Get All Todos
+#### Get All Todos
 ```
 # I Specify that it's a query
-query {
+query AllTodos {
     # I invoke the getTodo query and pass it the input
-getTodos
+allTodos
 # Specify which properties I want from the return value
   {
     id
@@ -62,17 +71,17 @@ getTodos
   }
 }
 ```
-### Delete a Single Todo
+#### Delete a Single Todo
 ```
 # I Specify that it's a mutation
-mutation DeleteTodo{
+mutation DeleteTodo($id: ID!) {
     # I invoke the deleteTodo query and pass it the input
 deleteTodo(todoId:"43f2d64e-65f8-48f6-ac16-66c59cb68fa8") 
 }
 ```
 
 
-
+####  Curl equivalent operations
 // To get single ToDo item by ID
 curl -g 'http://localhost:8081/query?query={todo(id:"1"){id,text,done}}'
 

@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"github.com/StevenACoffman/gqlgen-todos/assets"
+	"io/fs"
 	"log"
 	"net/http"
 	"os"
@@ -14,7 +16,7 @@ import (
 	"github.com/StevenACoffman/gqlgen-todos/sqldb"
 )
 
-const defaultPort = "8080"
+const defaultPort = "3000"
 
 func main() {
 	port := os.Getenv("PORT")
@@ -31,8 +33,13 @@ func main() {
 	srv := handler.NewDefaultServer(
 		gql.NewExecutableSchema(gql.Config{Resolvers: &resolvers.Resolver{DBPool: pool}}),
 	)
-
-	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
+	realFrontend, err := fs.Sub(assets.EmbeddedFiles, "static")
+	if err != nil {
+		panic("Error getting frontend/build from embedded FS: " + err.Error())
+	}
+	fileHandler := http.FileServer(http.FS(realFrontend))
+	http.Handle("/", fileHandler)
+	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)

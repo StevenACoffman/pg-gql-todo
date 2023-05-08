@@ -215,4 +215,9 @@ roster/clever
 *.csv
 
 # Lockfiles for emulator
-pkg/gcpapi/datastore/dstest/lockfiles/
+pkg/gcpapi/datastore/dstest/lockfiles/node_modules/
+dist
+.cache
+cypress/screenshots
+cypress/videos
+.parcel-cache/

@@ -82,25 +82,6 @@ func (r *mutationResolver) DeleteTodo(ctx context.Context, todoID string) (strin
 	return todoID, nil
 }
 
-// GetTodos is the resolver for the getTodos field.
-func (r *queryResolver) GetTodos(ctx context.Context) ([]*model.Todo, error) {
-	poolConn, err := r.DBPool.Conn(context.Background())
-	if err != nil {
-		return nil, err
-	}
-	defer poolConn.Close()
-	q := todosql.New(poolConn)
-	sqltodos, err := q.ListTodos(ctx)
-	if err != nil {
-		return nil, err
-	}
-	var todos []*model.Todo
-	for _, sqltodo := range sqltodos {
-		todos = append(todos, sqldb.ConvertSQLtoGQLTodo(sqltodo))
-	}
-	return todos, nil
-}
-
 // GetTodo is the resolver for the getTodo field.
 func (r *queryResolver) GetTodo(ctx context.Context, todoID string) (*model.Todo, error) {
 	poolConn, err := r.DBPool.Conn(context.Background())
@@ -118,6 +99,24 @@ func (r *queryResolver) GetTodo(ctx context.Context, todoID string) (*model.Todo
 		return nil, err
 	}
 	return sqldb.ConvertSQLtoGQLTodo(sqltodo), nil
+}
+
+func (r *queryResolver) AllTodos(ctx context.Context) ([]*model.Todo, error) {
+	poolConn, err := r.DBPool.Conn(context.Background())
+	if err != nil {
+		return nil, err
+	}
+	defer poolConn.Close()
+	q := todosql.New(poolConn)
+	sqltodos, err := q.ListTodos(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var todos []*model.Todo
+	for _, sqltodo := range sqltodos {
+		todos = append(todos, sqldb.ConvertSQLtoGQLTodo(sqltodo))
+	}
+	return todos, nil
 }
 
 // Mutation returns gql.MutationResolver implementation.

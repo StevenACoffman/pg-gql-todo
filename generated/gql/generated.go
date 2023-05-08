@@ -51,8 +51,8 @@ type ComplexityRoot struct {
 	}
 
 	Query struct {
+		AllTodos func(childComplexity int) int
 		GetTodo  func(childComplexity int, todoID string) int
-		GetTodos func(childComplexity int) int
 	}
 
 	Todo struct {
@@ -68,7 +68,7 @@ type MutationResolver interface {
 	DeleteTodo(ctx context.Context, todoID string) (string, error)
 }
 type QueryResolver interface {
-	GetTodos(ctx context.Context) ([]*model.Todo, error)
+	AllTodos(ctx context.Context) ([]*model.Todo, error)
 	GetTodo(ctx context.Context, todoID string) (*model.Todo, error)
 }
 
@@ -123,6 +123,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateTodo(childComplexity, args["input"].(model.TodoInput)), true
 
+	case "Query.allTodos":
+		if e.complexity.Query.AllTodos == nil {
+			break
+		}
+
+		return e.complexity.Query.AllTodos(childComplexity), true
+
 	case "Query.getTodo":
 		if e.complexity.Query.GetTodo == nil {
 			break
@@ -134,13 +141,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.GetTodo(childComplexity, args["todoId"].(string)), true
-
-	case "Query.getTodos":
-		if e.complexity.Query.GetTodos == nil {
-			break
-		}
-
-		return e.complexity.Query.GetTodos(childComplexity), true
 
 	case "Todo.done":
 		if e.complexity.Todo.Done == nil {
@@ -240,7 +240,7 @@ var sources = []*ast.Source{
 }
 
 type Query {
-  getTodos: [Todo!]!
+  allTodos: [Todo!]!
   getTodo(todoId: ID!): Todo!
 }
 
@@ -561,8 +561,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteTodo(ctx context.Context
 	return fc, nil
 }
 
-func (ec *executionContext) _Query_getTodos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Query_getTodos(ctx, field)
+func (ec *executionContext) _Query_allTodos(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_allTodos(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -575,7 +575,7 @@ func (ec *executionContext) _Query_getTodos(ctx context.Context, field graphql.C
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().GetTodos(rctx)
+		return ec.resolvers.Query().AllTodos(rctx)
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -592,7 +592,7 @@ func (ec *executionContext) _Query_getTodos(ctx context.Context, field graphql.C
 	return ec.marshalNTodo2ᚕᚖgithubᚗcomᚋStevenACoffmanᚋgqlgenᚑtodosᚋgeneratedᚋgqlᚋmodelᚐTodoᚄ(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Query_getTodos(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Query_allTodos(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Query",
 		Field:      field,
@@ -2866,7 +2866,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Query")
-		case "getTodos":
+		case "allTodos":
 			field := field
 
 			innerFunc := func(ctx context.Context) (res graphql.Marshaler) {
@@ -2875,7 +2875,7 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 						ec.Error(ctx, ec.Recover(ctx, r))
 					}
 				}()
-				res = ec._Query_getTodos(ctx, field)
+				res = ec._Query_allTodos(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&invalids, 1)
 				}
