@@ -1,0 +1,17 @@
+# See https://github.com/kyleconroy/sqlc/blob/main/docs/reference/config.md
+---
+version: '2'
+sql:
+- schema: assets/migrations
+  queries: assets/queries
+  engine: postgresql
+  gen:
+    go:
+      package: todosql
+      out: generated/todosql
+      sql_package: database/sql # pgx/v5
+      emit_db_tags: true
+      emit_interface: true
+      emit_json_tags: true
+      emit_result_struct_pointers: true
+      emit_params_struct_pointers: true
