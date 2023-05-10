@@ -5,15 +5,13 @@
 package todosql
 
 import (
-	"time"
-
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 type Todo struct {
-	ID             uuid.UUID `db:"id" json:"id"`
-	Description    string    `db:"description" json:"description"`
-	Done           bool      `db:"done" json:"done"`
-	CreatedAt      time.Time `db:"created_at" json:"created_at"`
-	LastModifiedAt time.Time `db:"last_modified_at" json:"last_modified_at"`
+	ID             pgtype.UUID        `db:"id" json:"id"`
+	Description    string             `db:"description" json:"description"`
+	Done           bool               `db:"done" json:"done"`
+	CreatedAt      pgtype.Timestamptz `db:"created_at" json:"created_at"`
+	LastModifiedAt pgtype.Timestamptz `db:"last_modified_at" json:"last_modified_at"`
 }

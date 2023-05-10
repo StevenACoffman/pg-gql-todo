@@ -8,7 +8,7 @@ package todosql
 import (
 	"context"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 )
 
 const createTodo = `-- name: CreateTodo :one
@@ -20,7 +20,7 @@ INSERT INTO todo (
 `
 
 func (q *Queries) CreateTodo(ctx context.Context, description string) (*Todo, error) {
-	row := q.db.QueryRowContext(ctx, createTodo, description)
+	row := q.db.QueryRow(ctx, createTodo, description)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -37,8 +37,8 @@ DELETE FROM todo
 WHERE id = $1
 `
 
-func (q *Queries) DeleteTodo(ctx context.Context, id uuid.UUID) error {
-	_, err := q.db.ExecContext(ctx, deleteTodo, id)
+func (q *Queries) DeleteTodo(ctx context.Context, id pgtype.UUID) error {
+	_, err := q.db.Exec(ctx, deleteTodo, id)
 	return err
 }
 
@@ -47,8 +47,8 @@ SELECT id, description, done, created_at, last_modified_at FROM todo
 WHERE id = $1 LIMIT 1
 `
 
-func (q *Queries) GetTodo(ctx context.Context, id uuid.UUID) (*Todo, error) {
-	row := q.db.QueryRowContext(ctx, getTodo, id)
+func (q *Queries) GetTodo(ctx context.Context, id pgtype.UUID) (*Todo, error) {
+	row := q.db.QueryRow(ctx, getTodo, id)
 	var i Todo
 	err := row.Scan(
 		&i.ID,
@@ -66,7 +66,7 @@ ORDER BY created_at
 `
 
 func (q *Queries) ListTodos(ctx context.Context) ([]*Todo, error) {
-	rows, err := q.db.QueryContext(ctx, listTodos)
+	rows, err := q.db.Query(ctx, listTodos)
 	if err != nil {
 		return nil, err
 	}
@@ -85,9 +85,6 @@ func (q *Queries) ListTodos(ctx context.Context) ([]*Todo, error) {
 		}
 		items = append(items, &i)
 	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
@@ -102,12 +99,12 @@ RETURNING id, description, done, created_at, last_modified_at
 `
 
 type UpdateTodoParams struct {
-	ID   uuid.UUID `db:"id" json:"id"`
-	Done bool      `db:"done" json:"done"`
+	ID   pgtype.UUID `db:"id" json:"id"`
+	Done bool        `db:"done" json:"done"`
 }
 
 func (q *Queries) UpdateTodo(ctx context.Context, arg *UpdateTodoParams) (*Todo, error) {
-	row := q.db.QueryRowContext(ctx, updateTodo, arg.ID, arg.Done)
+	row := q.db.QueryRow(ctx, updateTodo, arg.ID, arg.Done)
 	var i Todo
 	err := row.Scan(
 		&i.ID,

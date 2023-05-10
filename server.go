@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io/fs"
 	"log"
@@ -19,6 +20,7 @@ import (
 const defaultPort = "3000"
 
 func main() {
+	ctx := context.Background()
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
@@ -26,7 +28,7 @@ func main() {
 
 	dbInfo := sqldb.NewDBInfo("postgres", "", "127.0.0.1", "stevetest", "public")
 	fmt.Println("Running migration")
-	pool, err := sqldb.NewDBPool(dbInfo, true)
+	pool, err := sqldb.NewDBPool(ctx, dbInfo, true)
 	if err != nil {
 		log.Fatal(err)
 	}

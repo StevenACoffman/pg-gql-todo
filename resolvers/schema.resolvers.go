@@ -8,7 +8,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgtype"
 
 	"github.com/StevenACoffman/pg-gql-todo/generated/gql"
 	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
@@ -18,11 +18,11 @@ import (
 
 // CreateTodo is the resolver for the createTodo field.
 func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	poolConn, err := r.DBPool.Conn(context.Background())
+	poolConn, err := r.DBPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer poolConn.Close()
+	defer poolConn.Release()
 	q := todosql.New(poolConn)
 	sqltodo, err := q.CreateTodo(ctx, input.Text)
 	if err != nil {
@@ -34,18 +34,19 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 
 // UpdateTodo is the resolver for the updateTodo field.
 func (r *mutationResolver) UpdateTodo(ctx context.Context, input model.TodoInput) (*model.Todo, error) {
-	poolConn, err := r.DBPool.Conn(context.Background())
+	poolConn, err := r.DBPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer poolConn.Close()
-	var todo *model.Todo
-	q := todosql.New(poolConn)
-	id, err := uuid.Parse(input.ID)
+	defer poolConn.Release()
+	id := pgtype.UUID{}
+	err = id.Scan(input.ID)
 	if err != nil {
 		return nil, err
 	}
 
+	var todo *model.Todo
+	q := todosql.New(poolConn)
 	sqltodo, err := q.UpdateTodo(ctx, &todosql.UpdateTodoParams{
 		ID:   id,
 		Done: input.Done,
@@ -54,8 +55,9 @@ func (r *mutationResolver) UpdateTodo(ctx context.Context, input model.TodoInput
 		return nil, err
 	}
 
+	idval, _ := sqltodo.ID.Value()
 	todo = &model.Todo{
-		ID:   fmt.Sprintf("%v", sqltodo.ID.String()),
+		ID:   fmt.Sprintf("%v", idval),
 		Text: sqltodo.Description,
 		Done: sqltodo.Done,
 	}
@@ -64,15 +66,16 @@ func (r *mutationResolver) UpdateTodo(ctx context.Context, input model.TodoInput
 
 // DeleteTodo is the resolver for the deleteTodo field.
 func (r *mutationResolver) DeleteTodo(ctx context.Context, todoID string) (string, error) {
-	id, err := uuid.Parse(todoID)
+	id := pgtype.UUID{}
+	err := id.Scan(todoID)
 	if err != nil {
 		return "", err
 	}
-	poolConn, err := r.DBPool.Conn(context.Background())
+	poolConn, err := r.DBPool.Acquire(ctx)
 	if err != nil {
 		return "", err
 	}
-	defer poolConn.Close()
+	defer poolConn.Release()
 	q := todosql.New(poolConn)
 
 	err = q.DeleteTodo(ctx, id)
@@ -85,16 +88,18 @@ func (r *mutationResolver) DeleteTodo(ctx context.Context, todoID string) (strin
 
 // GetTodo is the resolver for the getTodo field.
 func (r *queryResolver) GetTodo(ctx context.Context, todoID string) (*model.Todo, error) {
-	poolConn, err := r.DBPool.Conn(context.Background())
+	id := pgtype.UUID{}
+	err := id.Scan(todoID)
 	if err != nil {
 		return nil, err
 	}
-	defer poolConn.Close()
+
+	poolConn, err := r.DBPool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer poolConn.Release()
 	q := todosql.New(poolConn)
-	id, err := uuid.Parse(todoID)
-	if err != nil {
-		return nil, err
-	}
 	sqltodo, err := q.GetTodo(ctx, id)
 	if err != nil {
 		return nil, err
@@ -103,11 +108,11 @@ func (r *queryResolver) GetTodo(ctx context.Context, todoID string) (*model.Todo
 }
 
 func (r *queryResolver) AllTodos(ctx context.Context) ([]*model.Todo, error) {
-	poolConn, err := r.DBPool.Conn(context.Background())
+	poolConn, err := r.DBPool.Acquire(ctx)
 	if err != nil {
 		return nil, err
 	}
-	defer poolConn.Close()
+	defer poolConn.Release()
 	q := todosql.New(poolConn)
 	sqltodos, err := q.ListTodos(ctx)
 	if err != nil {

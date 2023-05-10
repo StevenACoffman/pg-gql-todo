@@ -1,16 +1,18 @@
 package sqldb
 
 import (
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/jackc/pgx/v5"
 	"strings"
 	"time"
 
-	"github.com/golang-migrate/migrate/v4"
 	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
-	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/mapstructure"
 
@@ -19,11 +21,39 @@ import (
 	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
 )
 
-func NewDBPool(dbInfo *DBInfo, automigrate bool) (*sql.DB, error) {
+func NewDBPool(ctx context.Context, dbInfo *DBInfo, automigrate bool) (*pgxpool.Pool, error) {
+	if automigrate {
+		err := MigrateDB(dbInfo)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	poolconfig, err := pgxpool.ParseConfig(dbInfo.ConnectionString())
+	if err != nil {
+		return nil, err
+	}
+	// Reasonable defaults here should be tuned by observing application
+	// PostgreSQL maxes at 500 open connections, so 20 app instances
+	// may consume all available.
+	poolconfig.MaxConns = 25
+	poolconfig.MinConns = 2
+	poolconfig.MaxConnIdleTime = 5 * time.Minute
+	poolconfig.MaxConnLifetime = 2 * time.Hour
+
+	pool, err := pgxpool.NewWithConfig(ctx, poolconfig)
+	if err != nil {
+		return nil, err
+	}
+
+	return pool, nil
+}
+
+func MigrateDB(dbInfo *DBInfo) error {
 	connString := dbInfo.ConnectionString()
 	c, err := pgx.ParseConfig(connString)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	// Register registers a DriverConfig and
@@ -32,48 +62,49 @@ func NewDBPool(dbInfo *DBInfo, automigrate bool) (*sql.DB, error) {
 
 	// opening a driver typically will not attempt to connect to the database.
 	// any parse or other error here does not require a Close
-	pool, err := sql.Open("pgx", registeredConnString)
+	stdpool, err := sql.Open("pgx", registeredConnString)
 	if err != nil {
-		return nil, err
+		return err
 	}
+	defer stdpool.Close()
 
 	// Reasonable defaults here should be tuned by observing application
 	// PostgreSQL maxes at 500 open connections, so 20 app instances
 	// may consume all available.
-	pool.SetMaxOpenConns(25)
-	pool.SetMaxIdleConns(25)
-	pool.SetConnMaxIdleTime(5 * time.Minute)
-	pool.SetConnMaxLifetime(2 * time.Hour)
-	if automigrate {
-		iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
-		if err != nil {
-			return nil, err
-		}
+	stdpool.SetMaxOpenConns(25)
+	stdpool.SetMaxIdleConns(1)
+	stdpool.SetConnMaxIdleTime(5 * time.Minute)
+	stdpool.SetConnMaxLifetime(2 * time.Hour)
 
-		migrateDriver, err := pgxmigrate.WithInstance(pool, &pgxmigrate.Config{
-			DatabaseName: dbInfo.DBName,
-			SchemaName:   dbInfo.DBSchema,
-		})
-		if err != nil {
-			return nil, err
-		}
-		logName := fmt.Sprintf("%s.%s", dbInfo.DBName, dbInfo.DBSchema)
-		migrator, err := migrate.NewWithInstance("iofs", iofsDriver, logName, migrateDriver)
-		if err != nil {
-			return nil, err
-		}
-		migrator.Log = &Logger{}
-
-		err = migrator.Up()
-		switch {
-		case errors.Is(err, migrate.ErrNoChange):
-			break
-		case err != nil:
-			return nil, err
-		}
+	iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
+	if err != nil {
+		return err
 	}
 
-	return pool, nil
+	defer iofsDriver.Close()
+	migrateDriver, err := pgxmigrate.WithInstance(stdpool, &pgxmigrate.Config{
+		DatabaseName: dbInfo.DBName,
+		SchemaName:   dbInfo.DBSchema,
+	})
+	if err != nil {
+		return err
+	}
+	logName := fmt.Sprintf("%s.%s", dbInfo.DBName, dbInfo.DBSchema)
+	migrator, err := migrate.NewWithInstance("iofs", iofsDriver, logName, migrateDriver)
+	if err != nil {
+		return err
+	}
+	migrator.Log = &Logger{}
+
+	err = migrator.Up()
+	switch {
+	case errors.Is(err, migrate.ErrNoChange):
+		break
+	case err != nil:
+		return err
+	}
+
+	return nil
 }
 
 type DBInfo struct {
@@ -129,8 +160,10 @@ func (l *Logger) Verbose() bool {
 }
 
 func ConvertSQLtoGQLTodo(sqltodo *todosql.Todo) *model.Todo {
+	idval, _ := sqltodo.ID.Value()
+
 	return &model.Todo{
-		ID:   sqltodo.ID.String(),
+		ID:   fmt.Sprintf("%v", idval),
 		Text: sqltodo.Description,
 		Done: sqltodo.Done,
 	}
