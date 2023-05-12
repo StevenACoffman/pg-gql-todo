@@ -8,10 +8,10 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/StevenACoffman/gqlgen-todos/generated/gql"
-	"github.com/StevenACoffman/gqlgen-todos/generated/gql/model"
-	"github.com/StevenACoffman/gqlgen-todos/generated/todosql"
-	"github.com/StevenACoffman/gqlgen-todos/sqldb"
+	"github.com/StevenACoffman/pg-gql-todo/generated/gql"
+	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
+	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
+	"github.com/StevenACoffman/pg-gql-todo/sqldb"
 	"github.com/google/uuid"
 )
 

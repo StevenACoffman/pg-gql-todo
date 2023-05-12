@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/StevenACoffman/gqlgen-todos/generated/gql/model"
-	"github.com/StevenACoffman/gqlgen-todos/generated/todosql"
+	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
+	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
 
-	"github.com/StevenACoffman/gqlgen-todos/assets"
+	"github.com/StevenACoffman/pg-gql-todo/assets"
 	"github.com/golang-migrate/migrate/v4"
 	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"

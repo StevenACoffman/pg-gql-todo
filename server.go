@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/StevenACoffman/gqlgen-todos/assets"
+	"github.com/StevenACoffman/pg-gql-todo/assets"
 	"io/fs"
 	"log"
 	"net/http"
@@ -11,9 +11,9 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
-	"github.com/StevenACoffman/gqlgen-todos/generated/gql"
-	"github.com/StevenACoffman/gqlgen-todos/resolvers"
-	"github.com/StevenACoffman/gqlgen-todos/sqldb"
+	"github.com/StevenACoffman/pg-gql-todo/generated/gql"
+	"github.com/StevenACoffman/pg-gql-todo/resolvers"
+	"github.com/StevenACoffman/pg-gql-todo/sqldb"
 )
 
 const defaultPort = "3000"
