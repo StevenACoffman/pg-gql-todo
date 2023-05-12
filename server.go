@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/StevenACoffman/pg-gql-todo/assets"
 	"io/fs"
 	"log"
 	"net/http"
@@ -11,6 +10,7 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 
+	"github.com/StevenACoffman/pg-gql-todo/assets"
 	"github.com/StevenACoffman/pg-gql-todo/generated/gql"
 	"github.com/StevenACoffman/pg-gql-todo/resolvers"
 	"github.com/StevenACoffman/pg-gql-todo/sqldb"

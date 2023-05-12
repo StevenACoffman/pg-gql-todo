@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
-	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
-
-	"github.com/StevenACoffman/pg-gql-todo/assets"
 	"github.com/golang-migrate/migrate/v4"
 	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/mapstructure"
+
+	"github.com/StevenACoffman/pg-gql-todo/assets"
+	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
+	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
 )
 
 func NewDBPool(dbInfo *DBInfo, automigrate bool) (*sql.DB, error) {
