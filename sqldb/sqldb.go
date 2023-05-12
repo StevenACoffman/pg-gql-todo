@@ -7,16 +7,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
-	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
-
-	"github.com/StevenACoffman/pg-gql-todo/assets"
 	"github.com/golang-migrate/migrate/v4"
 	pgxmigrate "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/mitchellh/mapstructure"
+
+	"github.com/StevenACoffman/pg-gql-todo/assets"
+	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
+	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
 )
 
 func NewDBPool(dbInfo *DBInfo, automigrate bool) (*sql.DB, error) {
@@ -45,35 +45,45 @@ func NewDBPool(dbInfo *DBInfo, automigrate bool) (*sql.DB, error) {
 	pool.SetConnMaxIdleTime(5 * time.Minute)
 	pool.SetConnMaxLifetime(2 * time.Hour)
 	if automigrate {
-		iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
+		err = MigrateDB(pool, dbInfo)
 		if err != nil {
-			return nil, err
-		}
-
-		migrateDriver, err := pgxmigrate.WithInstance(pool, &pgxmigrate.Config{
-			DatabaseName: dbInfo.DBName,
-			SchemaName:   dbInfo.DBSchema,
-		})
-		if err != nil {
-			return nil, err
-		}
-		logName := fmt.Sprintf("%s.%s", dbInfo.DBName, dbInfo.DBSchema)
-		migrator, err := migrate.NewWithInstance("iofs", iofsDriver, logName, migrateDriver)
-		if err != nil {
-			return nil, err
-		}
-		migrator.Log = &Logger{}
-
-		err = migrator.Up()
-		switch {
-		case errors.Is(err, migrate.ErrNoChange):
-			break
-		case err != nil:
 			return nil, err
 		}
 	}
 
 	return pool, nil
+}
+
+func MigrateDB(stdpool *sql.DB, dbInfo *DBInfo) error {
+	iofsDriver, err := iofs.New(assets.EmbeddedFiles, "migrations")
+	if err != nil {
+		return err
+	}
+	defer iofsDriver.Close()
+
+	migrateDriver, err := pgxmigrate.WithInstance(stdpool, &pgxmigrate.Config{
+		DatabaseName: dbInfo.DBName,
+		SchemaName:   dbInfo.DBSchema,
+	})
+	if err != nil {
+		return err
+	}
+	logName := fmt.Sprintf("%s.%s", dbInfo.DBName, dbInfo.DBSchema)
+	migrator, err := migrate.NewWithInstance("iofs", iofsDriver, logName, migrateDriver)
+	if err != nil {
+		return err
+	}
+	migrator.Log = &Logger{}
+
+	err = migrator.Up()
+	switch {
+	case errors.Is(err, migrate.ErrNoChange):
+		break
+	case err != nil:
+		return err
+	}
+
+	return nil
 }
 
 type DBInfo struct {

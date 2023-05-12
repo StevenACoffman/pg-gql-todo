@@ -8,11 +8,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/google/uuid"
+
 	"github.com/StevenACoffman/pg-gql-todo/generated/gql"
 	"github.com/StevenACoffman/pg-gql-todo/generated/gql/model"
 	"github.com/StevenACoffman/pg-gql-todo/generated/todosql"
 	"github.com/StevenACoffman/pg-gql-todo/sqldb"
-	"github.com/google/uuid"
 )
 
 // CreateTodo is the resolver for the createTodo field.
